@@ -76,15 +76,25 @@ export default function Sidebar() {
         </a>
 
         <div className="flex flex-col bg-base-200 min-h-full max-w-64 py-4 px-4">
-          <div className="flex flex-row items-center justify-between mb-4 mt-4">
-            <h2 className="font-bold ml-4" role="heading">
+          {/* brand/logo */}
+          <div className="flex items-center justify-center mt-2 mb-2">
+            {/* Place the image file at tools/server/webui/public/bell.png */}
+            <img
+              src="/bell.png"
+              alt="Logo"
+              className="h-16 w-auto select-none"
+              draggable={false}
+            />
+          </div>
+          <div className="relative flex flex-row items-center mb-4 mt-4">
+            <h2 className="font-bold mx-auto text-center" role="heading">
               Conversations
             </h2>
 
             {/* close sidebar button */}
             <label
               htmlFor="toggle-drawer"
-              className="btn btn-ghost lg:hidden"
+              className="btn btn-ghost lg:hidden absolute right-0"
               aria-label="Close sidebar"
               role="button"
               tabIndex={0}
