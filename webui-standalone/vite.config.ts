@@ -1,4 +1,4 @@
-import { defineConfig, PluginOption, loadEnv } from 'vite';
+import { defineConfig, PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import path from 'node:path';
@@ -52,17 +52,15 @@ const LLAMACPP_EMBED_PLUGIN: PluginOption = (function llamaCppPlugin() {
   } satisfies PluginOption;
 })();
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), ''); // load .env* into an object
-
-  const useSingleFile = env.SINGLE_FILE === '1' || env.EMBED_FOR_SERVER === '1' || process.env.SINGLE_FILE === '1' || process.env.EMBED_FOR_SERVER === '1';
+export default defineConfig(() => {
+  const useSingleFile = process.env.SINGLE_FILE === '1' || process.env.EMBED_FOR_SERVER === '1';
   const plugins = [...FRONTEND_PLUGINS, ...(useSingleFile ? [SINGLE_FILE_PLUGIN] : [])];
-  if (env.EMBED_FOR_SERVER === '1' || process.env.EMBED_FOR_SERVER === '1') {
+  if (process.env.EMBED_FOR_SERVER === '1') {
     plugins.push(LLAMACPP_EMBED_PLUGIN);
   }
 
   // Optional dev proxy: set VITE_DEV_PROXY=http://localhost:8080
-  const devProxyTarget = env.VITE_DEV_PROXY || process.env.VITE_DEV_PROXY;
+  const devProxyTarget = process.env.VITE_DEV_PROXY;
   const proxy = devProxyTarget
     ? {
         '/v1': devProxyTarget,

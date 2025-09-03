@@ -28,7 +28,6 @@ export default function Header() {
   }, [selectedTheme]);
 
   const buildInfo = serverProps?.build_info;
-  const compatWarning = serverProps && !buildInfo ? 'Server build info not available; this UI may be incompatible with the running server.' : null;
   const connected = !!serverProps;
 
   return (
@@ -46,11 +45,6 @@ export default function Header() {
             {connected ? 'connected' : 'unavailable'}
           </span>
           {buildInfo && <span className="ml-2 truncate max-w-[50ch]" title={buildInfo}>Build: {buildInfo}</span>}
-          {compatWarning && (
-            <span className="ml-2 text-error" title={compatWarning}>
-              {compatWarning}
-            </span>
-          )}
         </div>
       </div>
 
