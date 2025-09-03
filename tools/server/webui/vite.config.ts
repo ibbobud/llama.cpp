@@ -20,63 +20,63 @@ const GUIDE_FOR_FRONTEND = `
 
 const FRONTEND_PLUGINS = [react()];
 
-const BUILD_PLUGINS = [
-  ...FRONTEND_PLUGINS,
-  viteSingleFile(),
-  (function llamaCppPlugin() {
-    let config: any;
-    return {
-      name: 'llamacpp:build',
-      apply: 'build',
-      async configResolved(_config: any) {
-        config = _config;
-      },
-      writeBundle() {
-        const outputIndexHtml = path.join(config.build.outDir, 'index.html');
-        let content =
-          GUIDE_FOR_FRONTEND + '\n' + fs.readFileSync(outputIndexHtml, 'utf-8');
-        content = content.replace(/\r/g, ''); // remove windows-style line endings
-        const compressed = fflate.gzipSync(Buffer.from(content, 'utf-8'), {
-          level: 9,
-        });
+// Optional single-file build (for legacy embedding scenarios)
+const SINGLE_FILE_PLUGIN = viteSingleFile();
 
-        // because gzip header contains machine-specific info, we must remove these data from the header
-        // timestamp
-        compressed[0x4] = 0;
-        compressed[0x5] = 0;
-        compressed[0x6] = 0;
-        compressed[0x7] = 0;
-        // OS
-        compressed[0x9] = 0;
-
-        if (compressed.byteLength > MAX_BUNDLE_SIZE) {
-          throw new Error(
-            `Bundle size is too large (${Math.ceil(compressed.byteLength / 1024)} KB).\n` +
-              `Please reduce the size of the frontend or increase MAX_BUNDLE_SIZE in vite.config.js.\n`
-          );
-        }
-
-        const targetOutputFile = path.join(
-          config.build.outDir,
-          '../../public/index.html.gz'
+// Optional gzip-emit plugin for embedding into server repo when EMBED_FOR_SERVER=1
+const LLAMACPP_EMBED_PLUGIN: PluginOption = (function llamaCppPlugin() {
+  let config: any;
+  return {
+    name: 'llamacpp:build',
+    apply: 'build',
+    async configResolved(_config: any) {
+      config = _config;
+    },
+    writeBundle() {
+      const outputIndexHtml = path.join(config.build.outDir, 'index.html');
+      let content = GUIDE_FOR_FRONTEND + '\\n' + fs.readFileSync(outputIndexHtml, 'utf-8');
+      content = content.replace(/\r/g, '');
+      const compressed = fflate.gzipSync(Buffer.from(content, 'utf-8'), { level: 9 });
+      // strip timestamp and OS bytes for deterministic gzip
+      compressed[0x4] = 0; compressed[0x5] = 0; compressed[0x6] = 0; compressed[0x7] = 0;
+      compressed[0x9] = 0;
+      if (compressed.byteLength > MAX_BUNDLE_SIZE) {
+        throw new Error(
+          `Bundle size is too large (${Math.ceil(compressed.byteLength / 1024)} KB).` +
+            ` Reduce size or increase MAX_BUNDLE_SIZE.`
         );
-        fs.writeFileSync(targetOutputFile, compressed);
-      },
-    } satisfies PluginOption;
-  })(),
-];
+      }
+      const targetOutputFile = path.join(config.build.outDir, '../../public/index.html.gz');
+      fs.writeFileSync(targetOutputFile, compressed);
+    },
+  } satisfies PluginOption;
+})();
 
-export default defineConfig({
-  // @ts-ignore
-  plugins: process.env.ANALYZE ? FRONTEND_PLUGINS : BUILD_PLUGINS,
-  server: {
-    proxy: {
-      '/v1': 'http://localhost:8080',
-      '/props': 'http://localhost:8080',
+export default defineConfig(() => {
+  const useSingleFile = process.env.SINGLE_FILE === '1' || process.env.EMBED_FOR_SERVER === '1';
+  const plugins = [...FRONTEND_PLUGINS, ...(useSingleFile ? [SINGLE_FILE_PLUGIN] : [])];
+  if (process.env.EMBED_FOR_SERVER === '1') {
+    plugins.push(LLAMACPP_EMBED_PLUGIN);
+  }
+
+  // Optional dev proxy: set VITE_DEV_PROXY=http://localhost:8080
+  const devProxyTarget = process.env.VITE_DEV_PROXY;
+  const proxy = devProxyTarget
+    ? {
+        '/v1': devProxyTarget,
+        '/props': devProxyTarget,
+      }
+    : undefined;
+
+  return {
+    // @ts-ignore
+    plugins,
+    server: {
+      proxy,
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      },
     },
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    },
-  },
+  };
 });

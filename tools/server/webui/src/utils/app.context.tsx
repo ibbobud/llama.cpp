@@ -15,7 +15,7 @@ import {
   getSSEStreamAsync,
   getServerProps,
 } from './misc';
-import { BASE_URL, CONFIG_DEFAULT, isDev } from '../Config';
+import { CONFIG_DEFAULT, isDev } from '../Config';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 
@@ -96,7 +96,8 @@ export const AppContextProvider = ({
 
   // get server props
   useEffect(() => {
-    getServerProps(BASE_URL, config.apiKey)
+    // respect current configured API base; refetch when base or key changes
+    getServerProps(config.apiBase, config.apiKey)
       .then((props) => {
         console.debug('Server props:', props);
         setServerProps(props);
@@ -105,8 +106,7 @@ export const AppContextProvider = ({
         console.error(err);
         toast.error('Failed to fetch server props');
       });
-    // eslint-disable-next-line
-  }, []);
+  }, [config.apiBase, config.apiKey]);
 
   // handle change when the convId from URL is changed
   useEffect(() => {
@@ -234,7 +234,7 @@ export const AppContextProvider = ({
       };
 
       // send request
-      const fetchResponse = await fetch(`${BASE_URL}/v1/chat/completions`, {
+      const fetchResponse = await fetch(`${config.apiBase}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

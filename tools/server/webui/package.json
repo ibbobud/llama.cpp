@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:proxy": "VITE_DEV_PROXY=http://localhost:8080 vite",
     "build": "npm run format && tsc -b && vite build",
     "format": "eslint . && prettier --write .",
     "lint": "eslint .",

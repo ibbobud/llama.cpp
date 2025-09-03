@@ -3,12 +3,16 @@ import { isNumeric } from './utils/misc';
 
 export const isDev = import.meta.env.MODE === 'development';
 
-// constants
-export const BASE_URL = new URL('.', document.baseURI).href
-  .toString()
-  .replace(/\/$/, '');
+// API base URL resolution
+// Priority: VITE_API_BASE env > same-origin
+const DEFAULT_API_BASE = (import.meta.env.VITE_API_BASE as string | undefined)
+  ? (import.meta.env.VITE_API_BASE as string).replace(/\/$/, '')
+  : new URL('.', document.baseURI).href.toString().replace(/\/$/, '');
 
+// constants
 export const CONFIG_DEFAULT = {
+  // Connection
+  apiBase: DEFAULT_API_BASE,
   // Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value. Do not use null or undefined for default value.
   // Do not use nested objects, keep it single level. Prefix the key if you need to group them.
   apiKey: '',
@@ -43,6 +47,8 @@ export const CONFIG_DEFAULT = {
   pyIntepreterEnabled: false,
 };
 export const CONFIG_INFO: Record<string, string> = {
+  apiBase:
+    'Base URL of the llama.cpp server (e.g., https://api.example.com or http://localhost:8080). Leave empty to use same-origin.',
   apiKey: 'Set the API Key if you are using --api-key option for the server.',
   systemMessage: 'The starting message that defines how model should behave.',
   pasteLongTextToFileLen:
